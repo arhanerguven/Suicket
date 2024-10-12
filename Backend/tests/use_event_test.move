@@ -6,120 +6,54 @@ module TicketingApp::EventTests {
     use sui::sui::SUI;
 
     #[test]
-    fun test_create_event() {
-        let mut ctx = dummy();
+    public fun test_create_event(ctx: &mut TxContext) {
+        // Define test parameters
+        let name = String::utf8(b"Test Event");
+        let ticket_price = 100;
+        let tickets_available = 10;
 
-        // Create an event
-        let event = Event::create_event(
-            utf8(b"Test Event"),
-            100,  // Ticket price
-            50,   // Tickets available
-            true, // Refundable
-            50,   // Max refund price
-            200,  // Max resell price
-            &mut ctx,
-        );
+        // Call the create_event function
+        let event = Event::create_event(name, ticket_price, tickets_available, ctx);
 
-        // Verify the event was created with the correct details
-        assert!(Event::get_name(&event) == utf8(b"Test Event"), 1);
-        assert!(Event::get_ticket_price(&event) == 100, 2);
-        assert!(Event::get_refundable(&event) == true, 3);
-        assert!(Event::get_resellable(&event) == true, 4);
-        assert!(Event::get_max_refund_price(&event) == 50, 5);
-        assert!(Event::get_max_resell_price(&event) == 200, 6);
-        let dummy_address = @0x0;
-        transfer::public_transfer(event, dummy_address);
-    }
+        // Assert the event's properties
+        assert!(Event::get_name(&event) == &String::utf8(b"Test Event"), 1);
+        assert!(Event::get_ticket_price(&event) == ticket_price, 2);
+        assert!(vector::length(&event.ticket_pool) == tickets_available, 3);
 
-    #[test]
-    fun test_update_event() {
-        let mut ctx = dummy();
-
-        // Create an event
-        let mut event = Event::create_event(
-            utf8(b"Test Event"),
-            100,  // Ticket price
-            50,   // Tickets available
-            true, // Refundable
-            50,   // Max refund price
-            200,  // Max resell price
-            &mut ctx,
-        );
-
-        // Update the event details
-        Event::update_event_info(
-            &mut event,
-            120,  // New ticket price
-            30,   // New tickets available
-            false, // Not refundable anymore
-            40,   // New max refund price
-            180,  // New max resell price
-            &mut ctx,
-        );
-
-        // Verify the updated event details
-        assert!(Event::get_ticket_price(&event) == 120, 1);
-        assert!(Event::get_tickets_available(&event) == 30, 2);
-        assert!(Event::get_refundable(&event) == false, 3);
-        assert!(Event::get_max_refund_price(&event) == 40, 4);
-        assert!(Event::get_max_resell_price(&event) == 180, 5);
-        let dummy_address = @0x0;
-        transfer::public_transfer(event, dummy_address);
-    }
-
-    #[test]
-    fun test_delete_event() {
-        let mut ctx = dummy();
-
-        // Create an event
-        let event = Event::create_event(
-            utf8(b"Test Event"),
-            100,  // Ticket price
-            50,   // Tickets available
-            true, // Refundable
-            50,   // Max refund price
-            200,  // Max resell price
-            &mut ctx,
-        );
-
-        // Delete the event
-        Event::delete_event(event, &mut ctx);
-
-        // After deletion, no further checks are necessary; the event is assumed to be removed.
-    }
+        // Check each ticket in the ticket_pool
+        let event_id = object::id(&event);
+        let i = 0;
+        while (i < tickets_available) {
+            let ticket = vector::borrow(&event.ticket_pool, i);
+            assert!(ticket.event_id == event_id, 4);
+            assert!(ticket.owner == @0x0, 5); // Assuming tickets are initially unowned
+            assert!(ticket.price == ticket_price, 6);
+            assert!(ticket.sequence_number == ticket_price, 6);
+            i = i + 1;
+        }
+    }
 
     #[test]
     fun test_buy_ticket() {
+        // Initialize test context and objects
         let mut ctx_creator = dummy();
-        let mut ctx_buyer = dummy();
+        let mut ctx_buyer = dummy(); // TODO check how to do tests
+        let mut event = Event::new(/* parameters */);
+        let user_coin = Coin::new(/* parameters */);
 
-        // Create an event
         let mut event = Event::create_event(
             utf8(b"Test Event"),
             100,  // Ticket price
             1,   // Tickets available
-            true, // Refundable
-            50,   // Max refund price
-            200,  // Max resell price
             &mut ctx_creator,
         );
 
-        // Mint coins for the buyer
-        let user_coin = coin::mint_for_testing<SUI>(event.get_ticket_price(), &mut ctx_creator);
-
-        // Buy a ticket
-        let ticket = Event::buy_ticket(
-            &mut event,           
-            user_coin,             
-            &mut ctx_buyer,        
-        );
+        // Call the function
+        let ticket = buy_ticket(&mut event, user_coin, &mut ctx);
 
         assert!(ticket.get_event_id() == object::id(&event), 100);
         assert!(ticket.get_owner() == tx_context::sender(&ctx_buyer), 102);
         assert!(ticket.get_price() == event.get_ticket_price(), 101);
+    }
 
-        let dummy_address = @0x0;
-        transfer::public_transfer(ticket, dummy_address);
-        Event::delete_event(event, &mut ctx_creator);
-    }
 }

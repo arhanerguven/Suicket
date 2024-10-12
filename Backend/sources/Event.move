@@ -1,8 +1,15 @@
 module TicketingApp::Event {
     use std::string::String;
-    use TicketingApp::Ticket;
     use sui::coin::{Self, Coin};
     use sui::sui::SUI;
+    
+    public struct Ticket has key, store {
+        id: UID,                 // Unique identifier for the ticket
+        event_id: ID,           // ID of the event this ticket belongs to
+        owner: address,          // Address of the ticket owner (customer)
+        price: u64,              // Price at which the ticket was purchased
+        sequence_number: u64,
+    }
 
     // Event structure
     public struct Event has key, store {
@@ -10,26 +17,7 @@ module TicketingApp::Event {
         creator: address,
         name: String,
         ticket_price: u64,
-        tickets_available: u64,
-        refundable: bool,
-        resellable: bool,
-        max_refund_price: u64,  // Maximum refund amount for tickets
-        max_resell_price: u64,  // Maximum price the ticket can be resold for
-    }
-
-    // Getter for event fields (necessary to access fields from other modules)
-    public fun get_event_details(event: &Event): (&UID, String, u64, bool, bool) {
-        (&event.id, event.name, event.ticket_price, event.refundable, event.resellable)
-    }
-
-    // Getter for tickets_available
-    public fun get_tickets_available(event: &Event): u64 {
-        event.tickets_available
-    }
-
-    // Setter for tickets_available
-    public fun update_tickets_available(event: &mut Event, new_tickets_available: u64) {
-        event.tickets_available = new_tickets_available;
+        ticket_pool: vector<Ticket>,
     }
 
     public fun get_creator(event: &Event): address {
@@ -44,47 +32,40 @@ module TicketingApp::Event {
         event.ticket_price
     }
 
-    public fun get_refundable(event: &Event): bool {
-        event.refundable
-    }
-
-    public fun get_resellable(event: &Event): bool {
-        event.resellable
-    }
-
-    public fun get_max_refund_price(event: &Event): u64 {
-        event.max_refund_price
-    }
-
-    public fun get_max_resell_price(event: &Event): u64 {
-        event.max_resell_price
-    }
-
 
     // Function to create an event (only available to "creator" accounts)
     public fun create_event(
         name: String,
         ticket_price: u64,
         tickets_available: u64,
-        refundable: bool,
-        max_refund_price: u64,
-        max_resell_price: u64,
         ctx: &mut TxContext
     ): Event {
-        Event {
+        let ticket_pool = vector::empty<Ticket>();
+
+        let event = Event {
             id: object::new(ctx),
             creator: tx_context::sender(ctx),
             name: name,
             ticket_price: ticket_price,
-            tickets_available: tickets_available,
-            refundable: refundable,
-            resellable: true,
-            max_refund_price: max_refund_price,
-            max_resell_price: max_resell_price,
+            ticket_pool: ticket_pool,
+        };
+  
+        let mut i = 0;
+        while (i < tickets_available) {
+            let ticket = create_ticket(
+                object::id(&event),
+                event.ticket_price,
+                i,
+                ctx,
+            );
+            vector::push_back<Ticket>(&mut event.ticket_pool, ticket);
+            i = i + 1;
         }
+        
+        event
     }
 
-    // Function to delete an event (only by the creator)
+    // Function to delete an event (oŁnly by the creator)
     public fun delete_event(
         event: Event,
         ctx: &mut TxContext
@@ -95,37 +76,15 @@ module TicketingApp::Event {
         // Transfer the event to a zero address to effectively "burn" it
         transfer::public_transfer(event, @0x0);
     }
-
-    // Function to update the event information (only by the creator)
-    public fun update_event_info(
-        event: &mut Event,
-        new_ticket_price: u64,
-        new_tickets_available: u64,
-        new_refundable: bool,
-        new_max_refund_price: u64,
-        new_max_resell_price: u64,
-        ctx: &mut TxContext
-    ) {
-        let sender = tx_context::sender(ctx);
-        assert!(sender == event.creator, 3);  // Ensure only the creator can update the event
-
-        // Update event fields
-        event.ticket_price = new_ticket_price;
-        event.tickets_available = new_tickets_available;
-        event.refundable = new_refundable;
-        event.max_refund_price = new_max_refund_price;
-        event.max_resell_price = new_max_resell_price;
-    }
-
+    
     public fun buy_ticket(
         event: &mut Event,
         user_coin: Coin<SUI>,
         ctx: &mut TxContext
-    ): Ticket::Ticket {
+    ): Ticket {
 
-        // Assert tickets are available
-        let available_tickets = event.tickets_available;
-        assert!(available_tickets > 0, 2);
+        // Check if tickets are available
+        assert!(vector::length(&event.ticket_pool) > 0, 3);
 
         // Assert user_coin is equal to the ticket price
         assert!(user_coin.balance().value() == event.ticket_price, 3);
@@ -133,12 +92,49 @@ module TicketingApp::Event {
         // Pay for the ticket
         transfer::public_transfer(user_coin, event.creator);
 
-        // Return the created ticket
-        event.tickets_available = event.tickets_available - 1;
-        Ticket::create_ticket(
-            object::id(event),
-            event.ticket_price,
-            ctx
-        )
+        // Change ticket ownership
+        let ticket = vector::pop_back<Ticket>(&mut event.ticket_pool);
+        change_owner(tx_context::sender(ctx), ticket);
+
+        ticket
+    }
+
+
+    public fun create_ticket(
+        event_id: ID,
+        ticket_price: u64,
+        sequence_number: u64,
+        ctx: &mut TxContext
+    ): Ticket {
+        Ticket {
+            id: object::new(ctx),
+            event_id: event_id,
+            owner: tx_context::sender(ctx),
+            price: ticket_price,
+            sequence_number: sequence_number
+        }
+    }
+
+    public fun change_owner(
+        new_owner: address,
+        ticket: Ticket,
+    ) {
+        ticket.owner = new_owner
+    }
+
+    public fun get_event_id(ticket: &Ticket): ID {
+        ticket.event_id
+    }
+
+    public fun get_owner(ticket: &Ticket): address {
+        ticket.owner
+    }
+
+    public fun get_price(ticket: &Ticket): u64 {
+        ticket.price
+    }
+
+    public fun get_sequence_number(ticket: &Ticket): u64 {
+        ticket.sequence_number
     }
 }
