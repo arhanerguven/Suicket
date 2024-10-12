@@ -4,43 +4,36 @@ module TicketingApp::UserAccountTests {
     use sui::tx_context::dummy;
 
     #[test]
-    fun test_create_user_account() {
+    fun test_create_and_consume_user_account() {
         let mut ctx = dummy();
-        let email = utf8(b"user@example.com");
-        let name = utf8(b"John");
-        let surname = utf8(b"Doe");
-        let password_hash = utf8(b"hashed_password");
-        let user_type_creator = utf8(b"creator");
-        let user_type_buyer = utf8(b"buyer");
 
-        // Test creating a creator account
+        // Test 1: Creating a customer (is_creator = false)
+        let customer_account = UserAccount::create_user_account(
+            utf8(b"user@example.com"),
+            utf8(b"John"),
+            utf8(b"Doe"),
+            utf8(b"hashed_password"),
+            false,  // false for customer
+            &mut ctx,
+        );
+        assert!(UserAccount::is_customer(&customer_account), 1); // Check if customer
+        assert!(!UserAccount::is_creator(&customer_account), 2); // Should not be creator
+
+        // Test 2: Creating a creator (is_creator = true)
         let creator_account = UserAccount::create_user_account(
-            email,
-            name,
-            surname,
-            password_hash,
-            user_type_creator,
-            &mut ctx
+            utf8(b"creator@example.com"),
+            utf8(b"Jane"),
+            utf8(b"Smith"),
+            utf8(b"creator_password"),
+            true,  // true for creator
+            &mut ctx,
         );
-        assert!(UserAccount::is_creator(&creator_account), 1);
-        assert!(!UserAccount::is_customer(&creator_account), 2);
+        assert!(UserAccount::is_creator(&creator_account), 3); // Check if creator
+        assert!(!UserAccount::is_customer(&creator_account), 4); // Should not be customer
 
-        // Consume the creator account by overwriting it
-        let _ = creator_account;
-
-        // Test creating a buyer account
-        let buyer_account = UserAccount::create_user_account(
-            email,
-            name,
-            surname,
-            password_hash,
-            user_type_buyer,
-            &mut ctx
-        );
-        assert!(UserAccount::is_customer(&buyer_account), 3);
-        assert!(!UserAccount::is_creator(&buyer_account), 4);
-
-        // Consume the buyer account by overwriting it
-        let _ = buyer_account;
+        // Consume the accounts by transferring them to a dummy address
+        let dummy_address = @0x0;
+        transfer::public_transfer(customer_account, dummy_address);
+        transfer::public_transfer(creator_account, dummy_address);
     }
 }
