@@ -1,5 +1,5 @@
 module TicketingApp::Ticket {
-    use sui::object::{Self, UID};
+    use sui::object::{UID};
     use sui::tx_context::TxContext;
     use TicketingApp::UserAccount;  // Import the UserAccount module to check user type
     use TicketingApp::Event;        // Import the Event module
@@ -26,23 +26,25 @@ module TicketingApp::Ticket {
         assert!(is_customer, 1);  // Abort if the user is not a "customer" (error code 1)
 
         // Ensure the event has available tickets
-        assert!(event.tickets_available > 0, 2);  // Abort if there are no tickets left (error code 2)
+        let available_tickets = Event::get_tickets_available(event);
+        assert!(available_tickets > 0, 2);  // Abort if there are no tickets left (error code 2)
 
         // Deduct one ticket from the event's available tickets
-        event.tickets_available = event.tickets_available - 1;
+        event.tickets_available = available_tickets - 1;
+
+        // Get event details
+        let (event_id, event_name, ticket_price, refundable, resellable) = Event::get_event_details(event);
 
         // Issue the ticket to the customer
-        let ticket = Ticket {
+        Ticket {
             id: object::new(ctx),
-            event_id: event.id,
-            event_name: event.name,
+            event_id: event_id,
+            event_name: event_name,
             owner: tx_context::sender(ctx),       // The address of the buyer (customer)
-            price: event.ticket_price,
-            refundable: event.refundable,         // Set based on the event's refund policy
-            resellable: event.resellable,         // Set based on the event's resell policy
-        };
-
-        ticket
+            price: ticket_price,
+            refundable: refundable,         // Set based on the event's refund policy
+            resellable: resellable,         // Set based on the event's resell policy
+        }
     }
 
     // Additional functions to manage tickets can be added here

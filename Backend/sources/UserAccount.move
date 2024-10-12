@@ -1,7 +1,8 @@
 module TicketingApp::UserAccount {
-    use sui::object::{Self, UID};
+    use sui::object::{UID};
     use sui::tx_context::TxContext;
     use std::string::String;
+    use std::string;
 
     // User Account structure
     public struct UserAccount has key {
@@ -38,8 +39,11 @@ module TicketingApp::UserAccount {
 
     // Function to check if the user is a creator
     public fun is_creator(user_account: &UserAccount): bool {
-        user_account.user_type == b"creator"
+        string::eq(&user_account.user_type, &"creator")
     }
 
-    // Additional user account management functions can be added here
+    // Function to check if the user is a customer
+    public fun is_customer(user_account: &UserAccount): bool {
+        string::eq(&user_account.user_type, &"buyer")
+    }
 }

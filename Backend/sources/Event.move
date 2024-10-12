@@ -1,7 +1,7 @@
 module TicketingApp::Event {
-    use sui::object::{Self, UID};
+    use sui::object::{UID};
     use sui::tx_context::TxContext;
-    use sui::transfer;
+    use sui::transfer::Transfer;
     use TicketingApp::UserAccount;  // Import the UserAccount module
 
     // Event structure
@@ -15,6 +15,15 @@ module TicketingApp::Event {
         resellable: bool,
         max_refund_price: u64,  // Maximum refund amount for tickets
         max_resell_price: u64,  // Maximum price the ticket can be resold for
+    }
+
+    // Getter for event fields (necessary to access fields from other modules)
+    public fun get_event_details(event: &Event): (UID, vector<u8>, u64, bool, bool) {
+        (event.id, event.name, event.ticket_price, event.refundable, event.resellable)
+    }
+
+    public fun get_tickets_available(event: &Event): u64 {
+        event.tickets_available
     }
 
     // Function to create an event (only available to "creator" accounts)
@@ -33,7 +42,7 @@ module TicketingApp::Event {
         assert!(is_creator, 1);  // Abort if the user is not a "creator" (error code 1)
 
         // Create the event if the user is a creator
-        let event = Event {
+        Event {
             id: object::new(ctx),
             creator: tx_context::sender(ctx),
             name: name,
@@ -43,8 +52,7 @@ module TicketingApp::Event {
             resellable: true,
             max_refund_price: max_refund_price,
             max_resell_price: max_resell_price,
-        };
-        event
+        }
     }
 
     // Function to delete an event (only by the creator)
@@ -55,8 +63,8 @@ module TicketingApp::Event {
         let sender = tx_context::sender(ctx);
         assert!(sender == event.creator, 2);  // Ensure only the creator can delete the event
 
-        // Delete (burn) the event object
-        transfer::public_burn(event);
+        // Transfer the event to the zero address to effectively "burn" it
+        Transfer::public_transfer(event, 0x0, ctx);
     }
 
     // Function to update the event information (only by the creator)
