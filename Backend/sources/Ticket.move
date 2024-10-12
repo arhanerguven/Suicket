@@ -1,6 +1,4 @@
 module TicketingApp::Ticket {
-    use sui::object::{UID};
-    use sui::tx_context::TxContext;
     use TicketingApp::UserAccount;  // Import the UserAccount module to check user type
     use TicketingApp::Event;        // Import the Event module
 
