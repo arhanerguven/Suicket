@@ -1,5 +1,4 @@
 module TicketingApp::Event {
-    use TicketingApp::UserAccount; // Assuming UserAccount is in a separate module
     use std::string::String;
     // Event structure
     public struct Event has key, store {
@@ -29,9 +28,37 @@ module TicketingApp::Event {
         event.tickets_available = new_tickets_available;
     }
 
+    public fun get_creator(event: &Event): address {
+        event.creator
+    }
+
+    public fun get_name(event: &Event): &String {
+        &event.name
+    }
+
+    public fun get_ticket_price(event: &Event): u64 {
+        event.ticket_price
+    }
+
+    public fun get_refundable(event: &Event): bool {
+        event.refundable
+    }
+
+    public fun get_resellable(event: &Event): bool {
+        event.resellable
+    }
+
+    public fun get_max_refund_price(event: &Event): u64 {
+        event.max_refund_price
+    }
+
+    public fun get_max_resell_price(event: &Event): u64 {
+        event.max_resell_price
+    }
+
+
     // Function to create an event (only available to "creator" accounts)
     public fun create_event(
-        user_account: &UserAccount::UserAccount,
         name: String,
         ticket_price: u64,
         tickets_available: u64,
@@ -40,10 +67,6 @@ module TicketingApp::Event {
         max_resell_price: u64,
         ctx: &mut TxContext
     ): Event {
-        // Ensure only creators can create events
-        let is_creator = UserAccount::is_creator(user_account);
-        assert!(is_creator, 1);  // Abort if the user is not a "creator" (error code 1)
-
         Event {
             id: object::new(ctx),
             creator: tx_context::sender(ctx),

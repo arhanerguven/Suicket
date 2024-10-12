@@ -10,7 +10,6 @@ module TicketingApp::UserAccount {
         surname: String,
         password_hash: String,
         loyalty_points: u64,
-        is_creator: bool,  // true for creator, false for customer
     }
 
     // Function to create a new user account
@@ -19,7 +18,6 @@ module TicketingApp::UserAccount {
         name: String,
         surname: String,
         password_hash: String,
-        is_creator: bool,  // true for creator, false for customer
         ctx: &mut TxContext
     ): UserAccount {
         // Create the UserAccount
@@ -31,7 +29,6 @@ module TicketingApp::UserAccount {
             surname,
             password_hash,
             loyalty_points: 0,
-            is_creator,
         }
     }
 
@@ -56,11 +53,4 @@ module TicketingApp::UserAccount {
         account.loyalty_points
     }
 
-    public fun is_creator(account: &UserAccount): bool {
-        account.is_creator
-    }
-
-    public fun is_customer(account: &UserAccount): bool {
-        !account.is_creator // If not creator, it's a customer
-    }
 }
