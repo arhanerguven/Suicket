@@ -1,6 +1,5 @@
 module TicketingApp::UserAccount {
-    use std::string::String;
-    use std::string;
+    use std::string::{String, eq, utf8};  // Import the string functions from std::string
 
     // User Account structure
     public struct UserAccount has key {
@@ -37,11 +36,11 @@ module TicketingApp::UserAccount {
 
     // Function to check if the user is a creator
     public fun is_creator(user_account: &UserAccount): bool {
-        string::eq(&user_account.user_type, &"creator")
+        eq(&user_account.user_type, &utf8(b"creator"))
     }
 
-    // Function to check if the user is a customer
+    // Function to check if the user is a customer (buyer)
     public fun is_customer(user_account: &UserAccount): bool {
-        string::eq(&user_account.user_type, &"buyer")
+        eq(&user_account.user_type, &utf8(b"buyer"))
     }
 }
