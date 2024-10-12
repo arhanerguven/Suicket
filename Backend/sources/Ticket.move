@@ -1,4 +1,6 @@
 module TicketingApp::Ticket {
+    use sui::object::{UID};
+    use sui::tx_context::TxContext;
     use TicketingApp::UserAccount;  // Import the UserAccount module to check user type
     use TicketingApp::Event;        // Import the Event module
 
@@ -28,7 +30,7 @@ module TicketingApp::Ticket {
         assert!(available_tickets > 0, 2);  // Abort if there are no tickets left (error code 2)
 
         // Deduct one ticket from the event's available tickets
-        event.tickets_available = available_tickets - 1;
+        Event::update_tickets_available(event, available_tickets - 1);
 
         // Get event details
         let (event_id, event_name, ticket_price, refundable, resellable) = Event::get_event_details(event);
@@ -40,8 +42,8 @@ module TicketingApp::Ticket {
             event_name: event_name,
             owner: tx_context::sender(ctx),       // The address of the buyer (customer)
             price: ticket_price,
-            refundable: refundable,         // Set based on the event's refund policy
-            resellable: resellable,         // Set based on the event's resell policy
+            refundable: refundable,               // Set based on the event's refund policy
+            resellable: resellable,               // Set based on the event's resell policy
         }
     }
 
