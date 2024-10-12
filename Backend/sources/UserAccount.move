@@ -1,6 +1,4 @@
 module TicketingApp::UserAccount {
-    use sui::object::{UID};
-    use sui::tx_context::TxContext;
     use std::string::String;
     use std::string;
 

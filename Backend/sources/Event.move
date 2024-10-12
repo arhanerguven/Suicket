@@ -1,6 +1,4 @@
 module TicketingApp::Event {
-    use sui::object::{UID};
-    use sui::tx_context::TxContext;
     use sui::transfer::Transfer;
     use TicketingApp::UserAccount;  // Import the UserAccount module
 
