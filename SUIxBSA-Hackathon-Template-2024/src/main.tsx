@@ -20,7 +20,7 @@ ReactDOM.createRoot(document.getElementById("root")!).render(
       <QueryClientProvider client={queryClient}>
         <SuiClientProvider networks={networkConfig} defaultNetwork={network}>
           <WalletProvider stashedWallet={{
-                name: 'BSA Starter Pack',
+                name: 'SuissTicket',
                 network: network,
               }} autoConnect>
             <App />
