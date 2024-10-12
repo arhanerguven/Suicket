@@ -20,8 +20,14 @@ module TicketingApp::Event {
         (event.id, event.name, event.ticket_price, event.refundable, event.resellable)
     }
 
+    // Getter for tickets_available
     public fun get_tickets_available(event: &Event): u64 {
         event.tickets_available
+    }
+
+    // Setter for tickets_available
+    public fun update_tickets_available(event: &mut Event, new_tickets_available: u64) {
+        event.tickets_available = new_tickets_available;
     }
 
     // Function to create an event (only available to "creator" accounts)
