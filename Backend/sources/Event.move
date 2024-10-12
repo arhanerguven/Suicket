@@ -1,5 +1,9 @@
 module TicketingApp::Event {
     use std::string::String;
+    use TicketingApp::Ticket;
+    use sui::coin::{Self, Coin};
+    use sui::sui::SUI;
+
     // Event structure
     public struct Event has key, store {
         id: UID,
@@ -111,5 +115,30 @@ module TicketingApp::Event {
         event.refundable = new_refundable;
         event.max_refund_price = new_max_refund_price;
         event.max_resell_price = new_max_resell_price;
+    }
+
+    public fun buy_ticket(
+        event: &mut Event,
+        user_coin: Coin<SUI>,
+        ctx: &mut TxContext
+    ): Ticket::Ticket {
+
+        // Assert tickets are available
+        let available_tickets = event.tickets_available;
+        assert!(available_tickets > 0, 2);
+
+        // Assert user_coin is equal to the ticket price
+        assert!(user_coin.balance().value() == event.ticket_price, 3);
+
+        // Pay for the ticket
+        transfer::public_transfer(user_coin, event.creator);
+
+        // Return the created ticket
+        event.tickets_available = event.tickets_available - 1;
+        Ticket::create_ticket(
+            object::id(event),
+            event.ticket_price,
+            ctx
+        )
     }
 }
