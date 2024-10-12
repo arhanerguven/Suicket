@@ -1,11 +1,11 @@
 module TicketingApp::Event {
-    use sui::transfer;  // No need to alias, directly call transfer functions
-
+    use TicketingApp::UserAccount; // Assuming UserAccount is in a separate module
+    use std::string::String;
     // Event structure
-    public struct Event has key {
+    public struct Event has key, store {
         id: UID,
         creator: address,
-        name: vector<u8>,
+        name: String,
         ticket_price: u64,
         tickets_available: u64,
         refundable: bool,
@@ -15,7 +15,7 @@ module TicketingApp::Event {
     }
 
     // Getter for event fields (necessary to access fields from other modules)
-    public fun get_event_details(event: &Event): (&UID, vector<u8>, u64, bool, bool) {
+    public fun get_event_details(event: &Event): (&UID, String, u64, bool, bool) {
         (&event.id, event.name, event.ticket_price, event.refundable, event.resellable)
     }
 
@@ -32,7 +32,7 @@ module TicketingApp::Event {
     // Function to create an event (only available to "creator" accounts)
     public fun create_event(
         user_account: &UserAccount::UserAccount,
-        name: vector<u8>,
+        name: String,
         ticket_price: u64,
         tickets_available: u64,
         refundable: bool,
@@ -40,6 +40,7 @@ module TicketingApp::Event {
         max_resell_price: u64,
         ctx: &mut TxContext
     ): Event {
+        // Ensure only creators can create events
         let is_creator = UserAccount::is_creator(user_account);
         assert!(is_creator, 1);  // Abort if the user is not a "creator" (error code 1)
 
@@ -64,8 +65,8 @@ module TicketingApp::Event {
         let sender = tx_context::sender(ctx);
         assert!(sender == event.creator, 2);  // Ensure only the creator can delete the event
 
-        // Transfer the event to the zero address to effectively "burn" it
-        transfer::public_transfer(event, 0x0, ctx);  // or use public_burn if available
+        // Transfer the event to a zero address to effectively "burn" it
+        transfer::public_transfer(event, @0x0);
     }
 
     // Function to update the event information (only by the creator)
@@ -81,6 +82,7 @@ module TicketingApp::Event {
         let sender = tx_context::sender(ctx);
         assert!(sender == event.creator, 3);  // Ensure only the creator can update the event
 
+        // Update event fields
         event.ticket_price = new_ticket_price;
         event.tickets_available = new_tickets_available;
         event.refundable = new_refundable;
