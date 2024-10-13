@@ -1,4 +1,4 @@
-module TicketingApp::UserAccount {
+module 0x0::UserAccount {
     use std::string::String;
 
     // User Account structure
