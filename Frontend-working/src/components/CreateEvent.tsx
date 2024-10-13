@@ -85,11 +85,13 @@ export function CreateEvent({
   function create() {
     const tx = new Transaction();
 
+    // name, price, ticketsAvailable, vector<u8> URL
     tx.moveCall({
         arguments: [
             tx.pure.string(name),
             tx.pure.u64(Number(price)),
             tx.pure.u64(Number(ticketsAvailable)),
+            tx.pure.vector('u8', []),
         ],
         target: `${ticketingAppPackageId}::Event::create_event`,
     });

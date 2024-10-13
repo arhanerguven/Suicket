@@ -37,7 +37,7 @@ module 0x0::Event {
         tickets_available: u64,
         url: vector<u8>,
         ctx: &mut TxContext
-    ): Event {  
+    ) {  
         let event = Event {
             id: object::new(ctx),
             creator: tx_context::sender(ctx),
@@ -50,7 +50,7 @@ module 0x0::Event {
             ticket_verifiers: table::new<address, bool>(ctx),
             url: url
         };
-        event
+        transfer::public_transfer(event, ctx.sender());
     }
     
     public fun buy_resold_ticket(
