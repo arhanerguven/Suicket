@@ -5,3 +5,4 @@ pnpm-lock.yaml
 my_first_package
 package-lock.json
 .idea/**
+/front-from-scratch
