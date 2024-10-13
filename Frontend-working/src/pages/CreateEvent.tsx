@@ -85,13 +85,17 @@ export function CreateEvent({
   function create() {
     const tx = new Transaction();
 
+    const url = "https://gateway.pinata.cloud/ipfs/QmTUmRovBkZKNRkKxUUvZ2yx9CycKFCnQyeKTyXFJwKHFT";
+    const encoder = new TextEncoder();
+    const bytes = encoder.encode(url);
+
     // name, price, ticketsAvailable, vector<u8> URL
     tx.moveCall({
         arguments: [
             tx.pure.string(name),
             tx.pure.u64(Number(price)),
             tx.pure.u64(Number(ticketsAvailable)),
-            tx.pure.vector("u8", []),
+            tx.pure.vector("u8", [...bytes]),
         ],
         target: `${ticketingAppPackageId}::Event::create_event`,
     });
@@ -103,6 +107,8 @@ export function CreateEvent({
       {
         onSuccess: (result) => {
           const objectId = result.effects?.created?.[0]?.reference?.objectId;
+          console.log("Event created with ID", objectId);
+          console.dir(result, { depth: 5 });
           if (objectId) {
             onCreated(objectId);
           }
