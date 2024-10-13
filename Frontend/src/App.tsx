@@ -1,7 +1,7 @@
 import React from 'react';
 import { BrowserRouter as Router, Routes, Route, Link } from 'react-router-dom';
 import BuyTicket from './pages/BuyTicket';
-import CreateEvent from './pages/CreateEvent';
+import {CreateEvent} from './components/CreateEvent';
 import MyTickets from './pages/MyTickets';
 import MyEvents from './pages/MyEvents';
 
@@ -9,6 +9,7 @@ const App: React.FC = () => {
   const address = '0xYourBlockchainAddress'; // TODO remove this - it is in networkConfig.ts
 
   return (
+
     <Router>
       <div className="container mx-auto">
         <header>
@@ -33,10 +34,10 @@ const App: React.FC = () => {
         <main>
           <Routes>
             <Route path="/buy" element={<BuyTicket address={address} />} />
-            <Route path="/create" element={<CreateEvent address={address} />} />
+            <Route path="/create" element={<CreateEvent onCreated={(id) => window.location.hash} />} />
             <Route path="/tickets" element={<MyTickets address={address} />} />
             <Route path="/events" element={<MyEvents address={address} />} />
-            <Route path="/" element={<h2>Welcome to the Ticketing App</h2>} />
+            <Route path="/" element={<h2 className="text-2xl font-semibold text-center mt-8">Welcome to the Ticketing App</h2>} />
           </Routes>
         </main>
       </div>

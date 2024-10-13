@@ -1,46 +1,109 @@
-# Getting Started with Create React App
+# Sui x BSA 2024 dApp Starter Template
 
-This project was bootstrapped with [Create React App](https://github.com/facebook/create-react-app).
+Welcome to the [BSA](https://bsaepfl.ch/) x [SUI](https://sui.io/) Hackathon Official Starter Pack ! This kit should provide you with tons of tools to make your hackathon experience seamless and easy, so ou can focus on what you do best ! 
 
-## Available Scripts
+This starter pack was made by BSA comitee member [Loris](https://github.com/Loris-EPFL), feel free to contact me for any questions, bug reports, etc...
 
-In the project directory, you can run:
+This dApp was created using `@mysten/create-dapp` that sets up a basic React
+Client dApp using the following tools:
 
-### `npm start`
+- [React](https://react.dev/) as the UI framework
+- [TypeScript](https://www.typescriptlang.org/) for type checking
+- [Vite](https://vitejs.dev/) for build tooling
+- [TailwindCSS](https://tailwindcss.com/) for styling classes
+- [Daisy UI](https://daisyui.com/) for pre-built UI components
+- [ESLint](https://eslint.org/) for linting
+- [`@mysten/dapp-kit`](https://sdk.mystenlabs.com/dapp-kit) for connecting to
+  wallets and loading data
+- [pnpm](https://pnpm.io/) for package management
 
-Runs the app in the development mode.\
-Open [http://localhost:3000](http://localhost:3000) to view it in the browser.
+IMPORTANT ! : To select your desired network for the dapp, create a .env file at the root of the project, add either VITE_NETWORK="testnet" for testnet or VITE_NETWORK="mainnet" for mainnet. Dapp default to testnet if no .env file is provided.
 
-The page will reload if you make edits.\
-You will also see any lint errors in the console.
+For a full guide on how to build this dApp from scratch, visit this
+[guide](http://docs.sui.io/guides/developer/app-examples/e2e-counter#frontend).
 
-### `npm test`
+## Deploying your Move code
 
-Launches the test runner in the interactive watch mode.\
-See the section about [running tests](https://facebook.github.io/create-react-app/docs/running-tests) for more information.
+### Install Sui cli
 
-### `npm run build`
+Before deploying your move code, ensure that you have installed the Sui CLI. You
+can follow the [Sui installation instruction](https://docs.sui.io/build/install)
+to get everything set up.
 
-Builds the app for production to the `build` folder.\
-It correctly bundles React in production mode and optimizes the build for the best performance.
+This template uses `testnet` by default, so we'll need to set up a testnet
+environment in the CLI:
 
-The build is minified and the filenames include the hashes.\
-Your app is ready to be deployed!
+```bash
+sui client new-env --alias testnet --rpc https://fullnode.testnet.sui.io:443
+sui client switch --env testnet
+```
 
-See the section about [deployment](https://facebook.github.io/create-react-app/docs/deployment) for more information.
+If you haven't set up an address in the sui client yet, you can use the
+following command to get a new address:
 
-### `npm run eject`
+```bash
+sui client new-address secp256k1
+```
 
-**Note: this is a one-way operation. Once you `eject`, you can’t go back!**
+This well generate a new address and recover phrase for you. You can mark a
+newly created address as you active address by running the following command
+with your new address:
 
-If you aren’t satisfied with the build tool and configuration choices, you can `eject` at any time. This command will remove the single build dependency from your project.
+```bash
+sui client switch --address 0xYOUR_ADDRESS...
+```
 
-Instead, it will copy all the configuration files and the transitive dependencies (webpack, Babel, ESLint, etc) right into your project so you have full control over them. All of the commands except `eject` will still work, but they will point to the copied scripts so you can tweak them. At this point you’re on your own.
+We can ensure we have some Sui in our new wallet by requesting Sui from the
+faucet (make sure to replace the address with your address):
 
-You don’t have to ever use `eject`. The curated feature set is suitable for small and middle deployments, and you shouldn’t feel obligated to use this feature. However we understand that this tool wouldn’t be useful if you couldn’t customize it when you are ready for it.
+```bash
+curl --location --request POST 'https://faucet.testnet.sui.io/gas' \
+--header 'Content-Type: application/json' \
+--data-raw '{
+    "FixedAmountRequest": {
+        "recipient": "<YOUR_ADDRESS>"
+    }
+}'
+```
 
-## Learn More
+### Publishing the move package
 
-You can learn more in the [Create React App documentation](https://facebook.github.io/create-react-app/docs/getting-started).
+The move code for this template is located in the `move` directory. To publish
+it, you can enter the `move` directory, and publish it with the Sui CLI:
 
-To learn React, check out the [React documentation](https://reactjs.org/).
+```bash
+cd move
+sui client publish --gas-budget 100000000 counter
+```
+
+In the output there will be an object with a `"packageId"` property. You'll want
+to save that package ID to the `src/constants.ts` file as `PACKAGE_ID`:
+
+```ts
+export const TESTNET_COUNTER_PACKAGE_ID = "<YOUR_PACKAGE_ID>";
+```
+
+Now that we have published the move code, and update the package ID, we can
+start the app.
+
+## Starting your dApp
+
+To install dependencies you can run
+
+```bash
+pnpm install
+```
+
+To start your dApp in development mode run
+
+```bash
+pnpm dev
+```
+
+## Building
+
+To build your app for deployment you can run
+
+```bash
+pnpm build
+```

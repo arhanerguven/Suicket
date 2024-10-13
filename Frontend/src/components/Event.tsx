@@ -1,111 +1,102 @@
-import {
-    useCurrentAccount,
-    useSignAndExecuteTransaction,
-    useSuiClient,
-    useSuiClientQuery,
-  } from "@mysten/dapp-kit";
-  import type { SuiObjectData } from "@mysten/sui/dist/cjs/client";
-  import { Transaction } from "@mysten/sui/dist/cjs/transactions";
-  import { useNetworkVariable } from "../networkConfig";
-  
-  export function Event({ id }: { id: string }) {
-    const ticketingAppPackageId = useNetworkVariable("ticketingAppPackageId");
-    const suiClient = useSuiClient();
-    const currentAccount = useCurrentAccount();
-    const { mutate: signAndExecute } = useSignAndExecuteTransaction({
-      execute: async ({ bytes, signature }) =>
-        await suiClient.executeTransactionBlock({
-          transactionBlock: bytes,
-          signature,
-          options: {
-            showRawEffects: true,
-            showEffects: true,
-          },
-        }),
+import { useSignAndExecuteTransaction, useSuiClient } from "@mysten/dapp-kit";
+import { Transaction } from "@mysten/sui/transactions";
+import { useNetworkVariable } from "../networkConfig";
+import { useState } from "react";
+
+export function EventManager({
+  eventId,
+  ticketId,
+  onTicketBought,
+}: {
+  eventId: string;
+  ticketId?: string;
+  onTicketBought: (ticketId: string) => void;
+}) {
+  const ticketingAppPackageId = useNetworkVariable("ticketingAppPackageId");
+  const suiClient = useSuiClient();
+  const { mutate: signAndExecute } = useSignAndExecuteTransaction({
+    execute: async ({ bytes, signature }) =>
+      await suiClient.executeTransactionBlock({
+        transactionBlock: bytes,
+        signature,
+        options: {
+          showRawEffects: true,
+          showEffects: true,
+        },
+      }),
+  });
+
+  const [userCoinId, setUserCoinId] = useState("");
+
+  const buyRegularTicket = () => {
+    const tx = new Transaction();
+
+    tx.moveCall({
+      arguments: [tx.object(eventId), tx.object(userCoinId)],
+      target: `${ticketingAppPackageId}::Event::buy_regular_ticket`,
     });
-  
-    const { data, isPending, error, refetch } = useSuiClientQuery("getObject", {
-      id,
-      options: {
-        showContent: true,
-        showOwner: true,
+
+    signAndExecute(
+      {
+        transaction: tx,
       },
-    });
-  
-    const executeMoveCall = (method: "buyTicket" | "resellTicket", price?: number) => {
-      const tx = new Transaction();
-  
-      if (method === "buyTicket") {
-        tx.moveCall({
-          arguments: [tx.object(id)],
-          target: `${ticketingAppPackageId}::event::buy_ticket`,
-        });
-      } else if (method === "resellTicket" && price !== undefined) {
-        tx.moveCall({
-          arguments: [tx.object(id), tx.pure.u64(price)],
-          target: `${ticketingAppPackageId}::event::resell_ticket`,
-        });
-      }
-  
-      signAndExecute(
-        {
-          transaction: tx,
+      {
+        onSuccess: (result) => {
+          const newTicketId = result.effects?.created?.[0]?.reference?.objectId;
+          if (newTicketId) {
+            onTicketBought(newTicketId);
+          }
         },
-        {
-          onSuccess: async () => {
-            await refetch();
-          },
-        },
-      );
-    };
-  
-    if (isPending) return <p>Loading...</p>;
-  
-    if (error) return <p>Error: {error.message}</p>;
-  
-    if (!data.data) return <p>Event not found</p>;
-  
-    const ownedByCurrentAccount =
-      getEventFields(data.data)?.owner === currentAccount?.address;
-  
-    return (
-      <div className="max-w-md mx-auto p-4 mt-20">
-        <h1 className="text-3xl font-bold mb-4">Event {id}</h1>
-        <div className="flex flex-col gap-2">
-          <p>Event Name: {getEventFields(data.data)?.name}</p>
-          <p>Ticket Price: {getEventFields(data.data)?.ticketPrice}</p>
-          <p>Available Tickets: {getEventFields(data.data)?.numTickets}</p>
-          <div className="flex flex-row gap-2">
-            <button
-              className="btn btn-primary"
-              onClick={() => executeMoveCall("buyTicket")}
-            >
-              Buy Ticket
-            </button>
-            {ownedByCurrentAccount && (
-              <button
-                className="btn btn-secondary"
-                onClick={() => {
-                  const price = prompt("Enter resale price:");
-                  if (price) {
-                    executeMoveCall("resellTicket", parseInt(price, 10));
-                  }
-                }}
-              >
-                Resell Ticket
-              </button>
-            )}
-          </div>
-        </div>
-      </div>
+      },
     );
-  }
-  
-  function getEventFields(data: SuiObjectData) {
-    if (data.content?.dataType !== "moveObject") {
-      return null;
+  };
+
+  const buyResoldTicket = () => {
+    if (!ticketId) {
+      alert("Ticket ID is required for resold ticket purchase");
+      return;
     }
-  
-    return data.content.fields as { name: string; ticketPrice: number; numTickets: number; owner: string };
-  }
-  
+
+    const tx = new Transaction();
+
+    tx.moveCall({
+      arguments: [tx.object(ticketId), tx.object(eventId), tx.object(userCoinId)],
+      target: `${ticketingAppPackageId}::Event::buy_resold_ticket`,
+    });
+
+    signAndExecute(
+      {
+        transaction: tx,
+      },
+      {
+        onSuccess: (result) => {
+          const purchasedTicketId = result.effects?.created?.[0]?.reference?.objectId;
+          if (purchasedTicketId) {
+            onTicketBought(purchasedTicketId);
+          }
+        },
+      },
+    );
+  };
+
+  return (
+    <div className="max-w-md mx-auto p-4 mt-20">
+      <h1 className="text-3xl font-bold mb-4">Event Manager</h1>
+      <div className="flex flex-col gap-2">
+        <input
+          type="text"
+          placeholder="User Coin ID"
+          value={userCoinId}
+          onChange={(e) => setUserCoinId(e.target.value)}
+          className="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 mb-4"
+        />
+        <button className="btn btn-primary" onClick={buyRegularTicket}>
+          Buy Regular Ticket
+        </button>
+        <button className="btn btn-secondary" onClick={buyResoldTicket}>
+          Buy Resold Ticket
+        </button>
+      </div>
+    </div>
+  );
+}
