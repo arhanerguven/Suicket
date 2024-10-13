@@ -30,6 +30,10 @@ module 0x0::Event {
         url: vector<u8>
     }
 
+    public fun get_remaining_tickets(event: &Event): u64 {
+        event.remaining_tickets
+    }
+
     // Function to create an event (only available to "creator" accounts)
     public fun create_event(
         name: String,
@@ -81,7 +85,7 @@ module 0x0::Event {
         event: &mut Event,
         user_coin: Coin<SUI>,
         ctx: &mut TxContext
-    ): Ticket {
+    ) {
 
         // Assert tickets are available
         let available_tickets = event.remaining_tickets;
@@ -109,8 +113,11 @@ module 0x0::Event {
 
         // Add the ticket to unused tickets
         event.unused_tickets.add(object::id(&ticket), true);
+
+        ticket.owner = ctx.sender();
         
-        ticket
+        
+        // ticket
     }
 
     public fun resell_ticket(
