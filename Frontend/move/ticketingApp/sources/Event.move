@@ -1,8 +1,10 @@
-module TicketingApp::Event {
+module 0x0::Event {
     use std::string::String;
     use sui::coin::{Self, Coin};
     use sui::sui::SUI;
     use sui::table::{Self, Table};
+    use sui::url::{Self, Url};
+
     // TODO define error codes
     
     public struct Ticket has key, store {
@@ -11,6 +13,7 @@ module TicketingApp::Event {
         owner: address,          // Address of the ticket owner (customer)
         price: u64,              // Price at which the ticket was purchased
         sequence_number: u64,
+        url: Url
     }
 
     // Event structure
@@ -24,6 +27,11 @@ module TicketingApp::Event {
         resale_tickets: Table<ID, Ticket>,
         unused_tickets: Table<ID, bool>,
         ticket_verifiers: Table<address, bool>,
+        url: vector<u8>
+    }
+
+    public fun get_remaining_tickets(event: &Event): u64 {
+        event.remaining_tickets
     }
 
     // Function to create an event (only available to "creator" accounts)
@@ -31,8 +39,9 @@ module TicketingApp::Event {
         name: String,
         ticket_price: u64,
         tickets_available: u64,
+        url: vector<u8>,
         ctx: &mut TxContext
-    ): Event {  
+    ) {  
         let event = Event {
             id: object::new(ctx),
             creator: tx_context::sender(ctx),
@@ -43,9 +52,9 @@ module TicketingApp::Event {
             resale_tickets: table::new<ID, Ticket>(ctx),
             unused_tickets: table::new<ID, bool>(ctx),
             ticket_verifiers: table::new<address, bool>(ctx),
+            url: url
         };
-        
-        event
+        transfer::public_transfer(event, ctx.sender());
     }
     
     public fun buy_resold_ticket(
@@ -76,7 +85,7 @@ module TicketingApp::Event {
         event: &mut Event,
         user_coin: Coin<SUI>,
         ctx: &mut TxContext
-    ): Ticket {
+    ) {
 
         // Assert tickets are available
         let available_tickets = event.remaining_tickets;
@@ -92,19 +101,23 @@ module TicketingApp::Event {
         let ticket_sequence_number = event.ticket_sequence_number;
         event.ticket_sequence_number = event.ticket_sequence_number + 1;
         event.remaining_tickets = event.remaining_tickets - 1;
-
+        let url_current = event.url;
         // Create a new ticket
         let ticket = create_ticket(
             object::id(event),
             event.ticket_price,
             ticket_sequence_number,
+            url_current,
             ctx
         );
 
         // Add the ticket to unused tickets
         event.unused_tickets.add(object::id(&ticket), true);
+
+        ticket.owner = ctx.sender();
         
-        ticket
+        
+        // ticket
     }
 
     public fun resell_ticket(
@@ -164,6 +177,7 @@ module TicketingApp::Event {
         event_id: ID,
         ticket_price: u64,
         sequence_number: u64,
+        url: vector<u8>,
         ctx: &mut TxContext
     ): Ticket {
         Ticket {
@@ -172,8 +186,10 @@ module TicketingApp::Event {
             owner: tx_context::sender(ctx),
             price: ticket_price,
             sequence_number: sequence_number,
+            url: url::new_unsafe_from_bytes(url)
         }
     }
+
 
     // ----------- Getters --------- TODO cleanup
 

@@ -107,3 +107,13 @@ To build your app for deployment you can run
 ```bash
 pnpm build
 ```
+
+# How to successfully run this thing?
+1. `cd Frontend-working/move/ticketingApp`
+2. `sui publish client`
+3. copy the `PackageID` value from the console output and copy it into `TESTNET_TICKETING_APP_PACKAGE_ID` variable in `Frontend-working/src/constants.tx`
+4. `cd` into `Frontend-working`
+5. run `pnpm dev`
+6. Open the webpage client and click on `Create Event`
+7. Log into your sui wallet
+8. input the name, prize, amount and CREATE EVENT!!!

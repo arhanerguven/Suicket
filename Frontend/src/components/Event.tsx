@@ -1,69 +1,101 @@
 import { useSignAndExecuteTransaction, useSuiClient } from "@mysten/dapp-kit";
 import { Transaction } from "@mysten/sui/transactions";
 import { useNetworkVariable } from "../networkConfig";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 
 export function EventManager({
   eventId,
-  ticketId,
   onTicketBought,
 }: {
-  eventId: string;
-  ticketId?: string;
-  onTicketBought: (ticketId: string) => void;
+  eventId: string | null;
+  onTicketBought: (ticketId: string ) => string;
 }) {
+
+    // eventId = '0xbdbebf864cbb302d0e6e6e2a0bc61d7228044e3b7debb18c734d4786858b0d41' // TODO change
+
+    const suiClient = useSuiClient();
+    const [eventData, setEventData] = useState<any | null>(null);
+    const [loading, setLoading] = useState<boolean>(true);
+    const [error, setError] = useState<string | null>(null);
+
+    useEffect(() => {
+        if (eventId) {
+            fetchEventDetails(eventId);
+        }
+    }, [eventId]);
+
+    async function fetchEventDetails(eventId: string | null) {
+        setLoading(true);
+        setError(null);
+
+        if (!eventId) {
+            setError("Event ID is required.");
+            setLoading(false);
+            return;
+        }
+        try {
+            // Fetch event details using suiClient
+            const eventDetails = await suiClient.getObject({
+                id: eventId,
+                options: {
+                    showContent: true,
+                    showType: true,
+                },
+            });
+
+            if (eventDetails.data) {
+                setEventData(eventDetails.data);
+            } else {
+                setError("Failed to fetch event details.");
+            }
+        } catch (err: any) {
+            setError("Error fetching event details: " + err.message);
+        } finally {
+            setLoading(false);
+        }
+    }
+
+    // if (loading) return <p>Loading event details...</p>;
+    // if (error) return <p>Error: {error}</p>;
+
+  // connect to the network
   const ticketingAppPackageId = useNetworkVariable("ticketingAppPackageId");
-  const suiClient = useSuiClient();
-  const { mutate: signAndExecute } = useSignAndExecuteTransaction({
-    execute: async ({ bytes, signature }) =>
-      await suiClient.executeTransactionBlock({
+  // const suiClient = useSuiClient();
+  const { mutateAsync: signAndExecute } = useSignAndExecuteTransaction({
+    execute: async ({ bytes, signature }) => {
+      const result = await suiClient.executeTransactionBlock({
         transactionBlock: bytes,
         signature,
         options: {
           showRawEffects: true,
           showEffects: true,
         },
-      }),
+      });
+      return result;
+    },
   });
 
-  const [userCoinId, setUserCoinId] = useState("");
+  // const [userCoinId, setUserCoinId] = useState("");
 
-  const buyRegularTicket = () => {
-    const tx = new Transaction();
+  
+  // prepare arguments
+  const tx = new Transaction();
+  const [coin] = tx.splitCoins(tx.gas, [100]);
 
-    tx.moveCall({
-      arguments: [tx.object(eventId), tx.object(userCoinId)],
-      target: `${ticketingAppPackageId}::Event::buy_regular_ticket`,
-    });
-
-    signAndExecute(
-      {
-        transaction: tx,
-      },
-      {
-        onSuccess: (result) => {
-          const newTicketId = result.effects?.created?.[0]?.reference?.objectId;
-          if (newTicketId) {
-            onTicketBought(newTicketId);
-          }
-        },
-      },
-    );
-  };
-
-  const buyResoldTicket = () => {
-    if (!ticketId) {
-      alert("Ticket ID is required for resold ticket purchase");
-      return;
+  // Function to buy a regular ticket 
+  const buyRegularTicket = async () => {    
+    // make a call to move
+    if (eventId) {
+      tx.moveCall({
+        arguments: [tx.object(eventId), coin],
+        target: `${ticketingAppPackageId}::Event::buy_regular_ticket`,
+      });
+    } else {
+      console.error("Event ID is null");
+      alert("Event ID is missing. Please try again.");
     }
 
-    const tx = new Transaction();
-
-    tx.moveCall({
-      arguments: [tx.object(ticketId), tx.object(eventId), tx.object(userCoinId)],
-      target: `${ticketingAppPackageId}::Event::buy_resold_ticket`,
-    });
-
+    // sign and execute
     signAndExecute(
       {
         transaction: tx,
@@ -75,28 +107,52 @@ export function EventManager({
             onTicketBought(purchasedTicketId);
           }
         },
-      },
+        onError: (error) => {
+          console.error("Failed to buy a ticket:", error);
+          alert("Failed to buy a ticket. Please try again.");
+        },
+      }
     );
   };
 
   return (
-    <div className="max-w-md mx-auto p-4 mt-20">
-      <h1 className="text-3xl font-bold mb-4">Event Manager</h1>
-      <div className="flex flex-col gap-2">
-        <input
-          type="text"
-          placeholder="User Coin ID"
-          value={userCoinId}
-          onChange={(e) => setUserCoinId(e.target.value)}
-          className="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 mb-4"
-        />
-        <button className="btn btn-primary" onClick={buyRegularTicket}>
-          Buy Regular Ticket
-        </button>
-        <button className="btn btn-secondary" onClick={buyResoldTicket}>
-          Buy Resold Ticket
-        </button>
-      </div>
+    <div className="ticket-info">
+      <h2>Event Tickets</h2>
+      {eventData ? (
+          <div>
+              <p><strong>Name:</strong> {eventData.content?.fields?.name}</p>
+              <p><strong>Ticket Price:</strong> {eventData.content?.fields?.ticket_price}</p>
+              <p><strong>Tickets Available:</strong> {eventData.content?.fields?.remaining_tickets}</p>
+              <p><strong>Creator:</strong> {eventData.content?.fields?.creator}</p>
+              {/* Add more fields as needed */}
+          </div>
+      ) : (
+          <p>No data available for this event.</p>
+      )}
+      <button
+        className="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded"
+        onClick={buyRegularTicket}
+      >
+        Buy Regular Ticket
+      </button>
     </div>
   );
 }
+
+
+// return (
+//   <div className="event-details">
+//       <h2>Event Details</h2>
+//       {eventData ? (
+//           <div>
+//               <p><strong>Name:</strong> {eventData.content?.fields?.name}</p>
+//               <p><strong>Ticket Price:</strong> {eventData.content?.fields?.ticket_price}</p>
+//               <p><strong>Tickets Available:</strong> {eventData.content?.fields?.remaining_tickets}</p>
+//               <p><strong>Creator:</strong> {eventData.content?.fields?.creator}</p>
+//               {/* Add more fields as needed */}
+//           </div>
+//       ) : (
+//           <p>No data available for this event.</p>
+//       )}
+//   </div>
+// );
