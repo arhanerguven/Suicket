@@ -1,46 +1,32 @@
 import React from 'react';
-import { BrowserRouter as Router, Routes, Route, Link } from 'react-router-dom';
+import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import BuyTicket from './pages/BuyTicket';
-import {CreateEvent} from './components/CreateEvent';
+import {CreateEvent} from './pages/CreateEvent';
 import MyTickets from './pages/MyTickets';
 import MyEvents from './pages/MyEvents';
+import HomePage from './pages/HomePage';
 
 const App: React.FC = () => {
   const address = '0xYourBlockchainAddress'; // TODO remove this - it is in networkConfig.ts
 
-  return (
+  const [activeEvent, setActiveEvent] = React.useState<string | null>(null);
 
+  const handleEventCreated = (eventId: string) => {
+    // Store the event ID in state and return it
+    setActiveEvent(eventId);
+    console.log(` active event ${activeEvent}`)
+    return eventId;
+};
+
+  return (
     <Router>
-      <div className="container mx-auto">
-        <header>
-          <h1 className="text-3xl font-bold mb-4">Ticketing App</h1>
-        </header>
-        <nav className="mb-4">
-          <ul className="flex space-x-4">
-            <li>
-              <Link to="/buy" className="text-blue-500 hover:text-blue-700">Buy Ticket</Link>
-            </li>
-            <li>
-              <Link to="/create" className="text-blue-500 hover:text-blue-700">Create Event</Link>
-            </li>
-            <li>
-              <Link to="/tickets" className="text-blue-500 hover:text-blue-700">My Tickets</Link>
-            </li>
-            <li>
-              <Link to="/events" className="text-blue-500 hover:text-blue-700">My Events</Link>
-            </li>
-          </ul>
-        </nav>
-        <main>
           <Routes>
             <Route path="/buy" element={<BuyTicket address={address} />} />
-            <Route path="/create" element={<CreateEvent onCreated={(id) => window.location.hash} />} />
+            <Route path="/create" element={<CreateEvent onCreated={handleEventCreated} />} />
             <Route path="/tickets" element={<MyTickets address={address} />} />
             <Route path="/events" element={<MyEvents address={address} />} />
-            <Route path="/" element={<h2 className="text-2xl font-semibold text-center mt-8">Welcome to the Ticketing App</h2>} />
+            <Route path="/" element={<HomePage />} />
           </Routes>
-        </main>
-      </div>
     </Router>
   );
 };

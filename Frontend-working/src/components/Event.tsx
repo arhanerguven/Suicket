@@ -90,10 +90,16 @@ export function EventManager({
           onChange={(e) => setUserCoinId(e.target.value)}
           className="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 mb-4"
         />
-        <button className="btn btn-primary" onClick={buyRegularTicket}>
+        <button
+          className="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded"
+          onClick={buyRegularTicket}
+        >
           Buy Regular Ticket
         </button>
-        <button className="btn btn-secondary" onClick={buyResoldTicket}>
+        <button
+          className="bg-green-500 hover:bg-green-700 text-white font-bold py-2 px-4 rounded"
+          onClick={buyResoldTicket}
+        >
           Buy Resold Ticket
         </button>
       </div>

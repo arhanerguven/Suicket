@@ -1,4 +1,5 @@
 import React from 'react'
+import Navbar from '../components/Navbar'
 
 interface MyEventsProps {
   address: string;
@@ -6,7 +7,10 @@ interface MyEventsProps {
 
 const MyEvents: React.FC<MyEventsProps> = ({ address }) => {
   return (
-    <div>MyEvents {address}</div>
+    <div className='flex flex-col min-h-screen w-full'>
+      <Navbar />
+      MyEvents {address}
+    </div>
   )
 }
 

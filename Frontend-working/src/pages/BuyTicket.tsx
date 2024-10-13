@@ -1,6 +1,8 @@
 import React, { useState, useEffect } from 'react';
 // import { getAccountInfo, buyTicket } from '../suiService';
 import Button from '../components/Button';
+import Navbar from '../components/Navbar';
+import { EventManager } from '../components/Event';
 
 const BuyTicket: React.FC<{ address: string }> = ({ address }) => {
 
@@ -42,20 +44,9 @@ const BuyTicket: React.FC<{ address: string }> = ({ address }) => {
   }
 
   return (
-    <div className="p-4">
-      <h2 className="text-2xl font-bold mb-4">Available Events</h2>
-      <ul className="space-y-4">
-        {events.map((event) => (
-          <li key={event.id} className="p-4 border rounded-lg shadow-md">
-            <p className="text-lg font-semibold">{event.name}</p>
-            <p className="text-gray-600">Price: {event.price}</p>
-            <p className="text-gray-600">Tickets available: {event.ticketsAvailable}</p>
-            <Button onClick={() => handleBuy(event.id)}>
-              Buy Ticket
-            </Button>
-          </li>
-        ))}
-      </ul>
+    <div className="w-full min-h-full flex flex-col">
+      <Navbar />
+      <EventManager onTicketBought={doNothing} eventId={''}  />
     </div>
   );
 };
