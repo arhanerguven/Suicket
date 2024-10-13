@@ -186,7 +186,7 @@ module TicketingApp::Event {
     }
 
 
-    // ----------- Getters ---------
+    // ----------- Getters ------------
 
     // -- Event --
     

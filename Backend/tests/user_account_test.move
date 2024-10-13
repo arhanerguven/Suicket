@@ -4,28 +4,20 @@ module TicketingApp::UserAccountTests {
     use sui::tx_context::dummy;
 
     #[test]
-    fun test_create_and_consume_user_account() {
+    public fun test_create_user_account() {
+        // Define parameters
         let mut ctx = dummy();
+        
+        let user_email = b"user@example.com".to_vector();
+        let user_name = b"John Doe".to_vector();          
 
-        // Test 1: Creating a customer (is_creator = false)
-        let customer_account = UserAccount::create_user_account(
-            utf8(b"user@example.com"),
-            utf8(b"John"),
-            utf8(b"Doe"),
-            utf8(b"hashed_password"),
-            &mut ctx,
-        );
-        // Test 2: Creating a creator (is_creator = true)
-        let creator_account = UserAccount::create_user_account(
-            utf8(b"creator@example.com"),
-            utf8(b"Jane"),
-            utf8(b"Smith"),
-            utf8(b"creator_password"),
-            &mut ctx,
-        );
-        // Consume the accounts by transferring them to a dummy address
-        let dummy_address = @0x0;
-        transfer::public_transfer(customer_account, dummy_address);
-        transfer::public_transfer(creator_account, dummy_address);
+        // Call the create_user_account function
+        let user_account = UserAccount::create_user_account(user_email, user_name, ctx);
+
+        // Assert
+        assert!(user_account.owner == ctx.sender(), 1);        
+        assert!(user_account.email == user_email, 2);         
+        assert!(user_account.name == user_name, 3);             
+        assert!(user_account.loyalty_points == 0, 4);           
     }
 }
