@@ -9,6 +9,11 @@ Suicket will also assign a special and unique NFT for the event attendees that w
 ## Details
 
 A user needs a Google account to access Suicket website. Any user can create their own event, and buy tickets for other events. The steps of buying a ticket is as follows:
+* Find the desired event from the Suicket website.
+* Under the event, the remaining number of spots can be seen. From this page, you can continue the buying process. The tickets are bought with Sui coins.
+* The ticket you receive is in the form of a NFT. The NFT is uniquely owned by you and it can only be accessed through your wallet address. An example NFT is given below.
+
+<img src="./1.png" alt="Description" width="50%" />
 
 
 
