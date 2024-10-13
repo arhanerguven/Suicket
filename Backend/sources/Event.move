@@ -34,7 +34,7 @@ module TicketingApp::Event {
         tickets_available: u64,
         url: vector<u8>,
         ctx: &mut TxContext
-    ): Event {  
+    ) {  
         let event = Event {
             id: object::new(ctx),
             creator: ctx.sender(),
@@ -47,7 +47,7 @@ module TicketingApp::Event {
             ticket_verifiers: table::new<address, bool>(ctx),
             url: url
         };
-        event
+        transfer::public_transfer(event, ctx.sender());
     }
     
     // Buys a ticket from the pool of resale tickets
@@ -79,7 +79,7 @@ module TicketingApp::Event {
         event: &mut Event,
         user_coin: Coin<SUI>,
         ctx: &mut TxContext
-    ): Ticket {
+    ) {
 
         // Assert tickets are available
         let available_tickets = event.remaining_tickets;
@@ -108,7 +108,7 @@ module TicketingApp::Event {
         // Add the ticket to unused tickets
         event.unused_tickets.add(object::id(&ticket), true);
         
-        ticket
+        transfer::public_transfer(ticket, ctx.sender());
     }
 
     // Adds an owned ticket to the pool of resale tickets
