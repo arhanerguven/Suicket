@@ -6,7 +6,7 @@ module TicketingApp::UserAccount {
         owner: address,         // User address
         email: String,          // User email
         name: String,           // User name (for in person verification)
-        loyalty_points: u64,
+        loyalty_points: u64,    // The number of loyalty points
     }
 
     // Create a new user account
