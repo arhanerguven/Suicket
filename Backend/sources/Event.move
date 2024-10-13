@@ -1,36 +1,33 @@
 module TicketingApp::Event {
     use std::string::String;
-    use sui::coin::{Self, Coin};
+    use sui::coin::{Coin};
     use sui::sui::SUI;
     use sui::table::{Self, Table};
     use sui::url::{Self, Url};
-
-    // TODO define error codes
     
     public struct Ticket has key, store {
         id: UID,                 // Unique identifier for the ticket
-        event_id: ID,           // ID of the event this ticket belongs to
-        owner: address,          // Address of the ticket owner (customer)
+        event_id: ID,            // ID of the event this ticket belongs to
+        owner: address,          // Address of the customer that purchased the ticket
         price: u64,              // Price at which the ticket was purchased
-        sequence_number: u64,
-        url: Url
+        sequence_number: u64,    // Sequence number of the ticket
+        url: Url                 // Url of the ticket NFT image
     }
 
-    // Event structure
     public struct Event has key, store {
-        id: UID,
-        creator: address,
-        name: String,
-        ticket_price: u64,
-        remaining_tickets: u64,
-        ticket_sequence_number: u64,
-        resale_tickets: Table<ID, Ticket>,
-        unused_tickets: Table<ID, bool>,
-        ticket_verifiers: Table<address, bool>,
-        url: vector<u8>
+        id: UID,                                // Unique identifier for the ticket
+        creator: address,                       // Address of the event creator
+        name: String,                           // Event name
+        ticket_price: u64,                      // Regular ticket price
+        remaining_tickets: u64,                 // Remaining regular tickets
+        ticket_sequence_number: u64,            // The sequence number of the next unsold regular ticket
+        resale_tickets: Table<ID, Ticket>,      // Table containing all the tickets set for resale
+        unused_tickets: Table<ID, bool>,        // Table containing unused (unverified) tickets
+        ticket_verifiers: Table<address, bool>, // Table containing addresses of verifiers
+        url: vector<u8>                         // Event NTF image url
     }
 
-    // Function to create an event (only available to "creator" accounts)
+    // Creates an event
     public fun create_event(
         name: String,
         ticket_price: u64,
@@ -40,7 +37,7 @@ module TicketingApp::Event {
     ): Event {  
         let event = Event {
             id: object::new(ctx),
-            creator: tx_context::sender(ctx),
+            creator: ctx.sender(),
             name: name,
             ticket_price: ticket_price,
             remaining_tickets: tickets_available,
@@ -53,6 +50,7 @@ module TicketingApp::Event {
         event
     }
     
+    // Buys a ticket from the pool of resale tickets
     public fun buy_resold_ticket(
         ticket: &Ticket,
         event: &mut Event,
@@ -71,12 +69,12 @@ module TicketingApp::Event {
 
         // Change ticket ownership
         let mut ticket = event.resale_tickets.remove(ticket_id);
-
         ticket.owner = ctx.sender();
         
         ticket
     }
 
+    // Buys regular tickets for the event
     public fun buy_regular_ticket(
         event: &mut Event,
         user_coin: Coin<SUI>,
@@ -97,13 +95,13 @@ module TicketingApp::Event {
         let ticket_sequence_number = event.ticket_sequence_number;
         event.ticket_sequence_number = event.ticket_sequence_number + 1;
         event.remaining_tickets = event.remaining_tickets - 1;
-        let url_current = event.url;
+
         // Create a new ticket
         let ticket = create_ticket(
             object::id(event),
             event.ticket_price,
             ticket_sequence_number,
-            url_current,
+            event.url,
             ctx
         );
 
@@ -113,6 +111,7 @@ module TicketingApp::Event {
         ticket
     }
 
+    // Adds an owned ticket to the pool of resale tickets
     public fun resell_ticket(
         ticket: Ticket,
         event: &mut Event,
@@ -158,6 +157,9 @@ module TicketingApp::Event {
         
         let ticket_id = object::id(ticket);
         let is_used = event.unused_tickets.contains(ticket_id);
+
+        // Returns true and marks the ticket as used if unused, 
+        // else returns false
         if (!is_used) {
             event.unused_tickets.remove(ticket_id); 
             true
@@ -184,7 +186,7 @@ module TicketingApp::Event {
     }
 
 
-    // ----------- Getters --------- TODO cleanup
+    // ----------- Getters ---------
 
     // -- Event --
     
